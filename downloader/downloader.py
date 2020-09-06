@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, List, Union
+from typing import List, Union
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,6 +11,23 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 class GameNotFound(Exception):
     pass
+
+
+class Item:
+    """[summary] Card, wallpaper's title and url
+    """
+
+    def __init__(self, title: str, url: str):
+        self._title = title
+        self._url = url
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    def __eq__(self, o: "Item") -> bool:
+        print(o)
+        return self.url == o.url
 
 
 class Downloader:
@@ -33,11 +50,11 @@ class Downloader:
         return self._game_title
 
     @property
-    def trading_cards(self) -> List[Dict[str, str]]:
+    def trading_cards(self) -> List[Item]:
         return self._trading_cards
 
     @property
-    def wallpapers(self) -> List[Dict[str, str]]:
+    def wallpapers(self) -> List[Item]:
         return self._wallpapers
 
     def fetch_page_data(self) -> None:
@@ -56,37 +73,29 @@ class Downloader:
         except AttributeError as e:
             raise GameNotFound(f"{self._appid} has not found!") from e
 
-        self._fetch_trading_cards()
-        self._fetch_wallpapers()
+        self._parse_trading_cards()
+        self._parse_wallpapers()
 
-    def _fetch_trading_cards(self):
+    def _parse_trading_cards(self):
         card_element = self._soup.select(
             "div.showcase-element-container.card a.element-link-right")
 
-        self._trading_cards: List[Dict[str, str]] = []
-        downloaded = set()
+        self._trading_cards: List[Item] = []
 
         for element in card_element:
-            title: str = element.parent.img["alt"]
-            url: str = element["href"]
+            item: Item = Item(element.parent.img["alt"], element["href"])
 
-            if url in downloaded:
-                continue
+            if item not in self._trading_cards:
+                self._trading_cards.append(item)
 
-            downloaded.add(url)
-            self._trading_cards.append({title: url})
-
-    def _fetch_wallpapers(self):
-        self._wallpapers: List[Dict[str, str]] = []
-
+    def _parse_wallpapers(self):
         wallpaper_element = self._soup.select(
             'div.showcase-element-container.background a.element-link-right')
 
-        for element in wallpaper_element:
-            title: str = element.parent.img["alt"]
-            url: str = element["href"]
-
-            self._wallpapers.append({title: url})
+        self._wallpapers: List[Item] = [
+            Item(element.parent.img["alt"], element["href"])
+            for element in wallpaper_element
+        ]
 
 
 def main(appid: int) -> None:
