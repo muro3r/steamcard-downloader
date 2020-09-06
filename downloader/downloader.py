@@ -14,9 +14,6 @@ class GameNotFound(Exception):
 
 
 class Item:
-    """[summary] Card, wallpaper's title and url
-    """
-
     def __init__(self, title: str, url: str):
         self._title = title
         self._url = url
@@ -25,9 +22,10 @@ class Item:
     def url(self) -> str:
         return self._url
 
-    def __eq__(self, o: "Item") -> bool:
-        print(o)
-        return self.url == o.url
+    def __eq__(self, other: Union[object, 'Item']) -> bool:
+        if not isinstance(other, Item):
+            return NotImplemented
+        return self.url == other.url
 
 
 class Downloader:
